@@ -283,8 +283,9 @@ class ELF {
                 sHeader.addralign = this._view.getUint32(offset + 0x20, littleEndian);
                 sHeader.entsize = this._view.getUint32(offset + 0x24, littleEndian);
 
-                const alignRaw = this._view.getUint32(offset + 0x1C, littleEndian);
-                sHeader.align = alignRaw === 0 || alignRaw === 1 ? null : alignRaw;
+                // 
+                // const alignRaw = this._view.getUint32(offset + 0x1C, littleEndian);
+                // sHeader.align = alignRaw === 0 || alignRaw === 1 ? null : alignRaw;
             } else {
                 const flags = Number(this._view.getBigUint64(offset + 0x08, littleEndian));
 
@@ -311,7 +312,7 @@ class ELF {
                 sHeader.link = this._view.getUint32(offset + 0x18, littleEndian);
                 sHeader.info = this._view.getUint32(offset + 0x1C, littleEndian);
                 sHeader.addralign = Number(this._view.getBigUint64(offset + 0x20, littleEndian));
-                sHeader.entsize = Number(this._view.getBigUint64(offset + 0x24, littleEndian));
+                sHeader.entsize = this._view.getUint32(offset + 0x28, littleEndian);
             }
         }
 
@@ -345,6 +346,10 @@ class ELF {
                 header,
                 name,
                 buffer,
+
+                offset: header.offset,
+                size: header.size,
+                
                 flags: header.flags,
                 type: header.type,
                 addr: header.addr
@@ -360,9 +365,52 @@ class ELF {
                 header
             }
         }
+
+        this.symbols = [];
+        const symbolTable = this.getSection(".symtab");
+        symTabParser: if (symbolTable) {
+            const strTable = this.getSection('.strtab');
+            if (!strTable) break symTabParser;
+
+            const addressClass = this.header.ident.class
+            const littleEndian = this.header.data;
+            const end = symbolTable.offset + symbolTable.size;
+
+            let pos = symbolTable.offset
+            while (pos < end) {
+                const header = {};
+                this.symbols.push(header);
+        
+                header.name =  this._readStringNT(strTable.offset + this._view.getUint32(pos, littleEndian));
+
+                if (addressClass === "32-bit" || true) { // TODO: Is it different?
+                    header.value = this._view.getUint32(pos + 0x04, littleEndian);
+                    header.size = this._view.getUint16(pos + 0x08, littleEndian);
+                    header.info = this._view.getUint16(pos + 0x0A, littleEndian);
+                    header.other = this._view.getUint16(pos + 0x0C, littleEndian);
+                    header.shndx = this._view.getUint16(pos + 0x0E, littleEndian);
+                } else {
+                    header.value = Number(this._view.getBigUint64(pos + 0x04, littleEndian));
+                    header.size = this._view.getUint16(pos + 0x0C, littleEndian);
+                    header.info = this._view.getUint16(pos + 0x0E, littleEndian);
+                    header.other = this._view.getUint16(pos + 0x10, littleEndian);
+                    header.shndx = this._view.getUint16(pos + 0x12, littleEndian);
+                }
+
+                pos += (symbolTable.header.entsize >> 2) << 2
+            }
+        }
+
+        this.symbolsByName = this.symbols.reduce(applyProperty, {});
     }
 
     getSection(name) {
         return this.sectionsByName[name] || null;
     }
+
+    getSymbol(name) {
+        return this.symbolsByName[name] || null;
+    }
 }
+
+module.exports = ELF;
