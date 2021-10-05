@@ -350,7 +350,7 @@ class ELF {
                 addr: header.addr
             }
         }
-        this.sections.byName = this.sections.reduce(applyProperty, {});
+        this.sectionsByName = this.sections.reduce(applyProperty, {});
 
         this.programs = Array(this._programHeaders.length);
         for (let i = 0; i < this._programHeaders.length; ++i) {
