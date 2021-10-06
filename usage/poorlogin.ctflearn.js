@@ -1,5 +1,5 @@
 /**
- * https://ctflearn.com/challenge/1013 - Poor Login
+ * https://ctflearn.com/challenge/1013 (Poor Login)
  */
 
 const { Remote, convo } = require("../pwn");
