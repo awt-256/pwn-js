@@ -1,25 +1,47 @@
+const convoBuffer = new ArrayBuffer(8);
+const u8 = new Uint8Array(convoBuffer);
+const i32 = new Int32Array(convoBuffer);
+const f32 = new Int32Array(convoBuffer);
+const i64 = new BigInt64Array(convoBuffer);
+
 const convo = {
-    buf(v) {
-        if (typeof v === "string") return Buffer.from(v);
-        else if (typeof v === "bigint") return Buffer.from(new BigInt64Array([v]).buffer);
-        else if (typeof v === "number" && (v % 1) === 0) return Buffer.from(new Int32Array([v]).buffer);
-        else if (typeof v === "number") return Buffer.from(new Float32Array([v]).buffer);
-        else if (Buffer.isBuffer(v)) return v;
-        else if (Array.isArray(v)) return Buffer.concat(v.map(c => convo.buf(c)));
+    toBuffer(v) {
+        if (typeof v === "string" || v instanceof Uint8Array) return Buffer.from(v);
+        else if (typeof v === "bigint") {
+            i64[0] = v;
+
+            return Buffer.from(u8);
+        } else if (typeof v === "number" && (v % 1) === 0) {
+            i32[0] = v;
+
+            return Buffer.from(u8);
+        } else if (typeof v === "number") {
+            f32[0] = v;
+            
+            return Buffer.from(u8);
+        } else if (Buffer.isBuffer(v)) return v;
+        else if (Array.isArray(v)) return Buffer.concat(v.map(c => convo.toBuffer(c)));
+
         else throw new TypeError("Unsupported type");
     },
-    utf(v) {
-        return convo.buf(v).toString();
+    toString(v) {
+        return convo.toBuffer(v).toString();
     },
-    i32(v) {
-        return new Int32Array(Uint8Array.from(convo.buf(v)).buffer)[0];
+    toInt32(v) {
+        u8.set(convo.toBuffer(v));
+
+        return i32[0];
     },
-    f32(v) {
-        return new Float32Array(Uint8Array.from(convo.buf(v)).buffer)[0];
+    toBigInt64(v) {
+        u8.set(convo.toBuffer(v));
+
+        return i64[0];
+    },
+    toFloat32(v) {
+        u8.set(convo.toBuffer(v));
+        
+        return f32[0];
     }
 }
 
-
-module.exports = {
-  convo
-}
+module.exports = { convo }
