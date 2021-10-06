@@ -1,7 +1,7 @@
 # util
 Utility functions and classes for PWNjs.
 
-## `util.convo`
+### `util.convo`
 ```js
 // `toBuffer` normalizes its parameter to a NodeJS.Buffer when possible. If the conversion is not supported it throws a TypeError.
 util.convo.toBuffer(0xdeadbeef); // Buffer< ... >
