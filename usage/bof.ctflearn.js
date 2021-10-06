@@ -4,7 +4,7 @@
  * Overflow and overwrite
  */
 
- const { Remote, convo } = require("../pwn");
+ const { Remote, convo } = require("..");
 
  (async () => {
      const remote = Remote.create("thekidofarcrania.com", 35235);
