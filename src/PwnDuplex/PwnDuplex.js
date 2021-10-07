@@ -14,7 +14,7 @@ class PwnDuplex extends EventEmitter {
         writeStream.on("error", (error) => this.emit("error", error));
         readStream.on("error", (error) => this.emit("error", error));
         readStream.on("data", (data) => {
-            this.buffer = Buffer.concat([this.buffer, Buffer.isBuffer(data) ? buffer : Buffer.from(data)]);
+            this.buffer = Buffer.concat([this.buffer, Buffer.isBuffer(data) ? data : Buffer.from(data)]);
             this.emit("data", data);
         });
     }
