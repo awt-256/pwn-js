@@ -1,33 +1,28 @@
 const EventEmitter = require("events");
-const net = require("net");
 
-class Remote extends EventEmitter {
-    socket = null;
+class PwnDuplex extends EventEmitter {
     buffer = Buffer.from(new ArrayBuffer(0));
     pos = 0;
 
-    constructor() {
+    constructor(readStream, writeStream) {
         super();
 
-        this.socket = new net.Socket();
+        this.readStream = readStream;
+        this.writeStream = writeStream;
 
-        this.socket.on("connect", () => this.emit("connect"));
-        this.socket.on("close", () => this.emit("close"));
-        this.socket.on("error", (error) => this.emit("error", error));
-        this.socket.on("data", (data) => {
-            this.buffer = Buffer.concat([this.buffer, data]);
+        readStream.on("close", () => this.emit("close"));
+        writeStream.on("error", (error) => this.emit("error", error));
+        readStream.on("error", (error) => this.emit("error", error));
+        readStream.on("data", (data) => {
+            this.buffer = Buffer.concat([this.buffer, Buffer.isBuffer(data) ? buffer : Buffer.from(data)]);
             this.emit("data", data);
         });
     }
 
-    open(host, port) {
-        this.socket.connect({ host, port });
-    }
-
-    send(data) {
+    write(data) {
         if (!Buffer.isBuffer(data)) data = Buffer.from(data);
 
-        return new Promise(r => this.socket.write(Uint8Array.from(data), r));
+        return new Promise(r => this.writeStream.write(Uint8Array.from(data), r));
     }
 
     onceLinesAsync(count) {
@@ -39,7 +34,7 @@ class Remote extends EventEmitter {
                 data.forEach(b => b === 0x0A && (lineCount += 1));
 
                 if (lineCount >= count) {
-                    this.socket.off("error", rej);
+                    this.off("error", rej);
                     this.off("data", awaiter);
                     
                     let i = 0;
@@ -49,7 +44,7 @@ class Remote extends EventEmitter {
                 }
             }
 
-            this.socket.once("error", rej); 
+            this.once("error", rej); 
             this.on("data", awaiter); 
 
             awaiter(this.buffer.slice(this.pos));
@@ -65,7 +60,7 @@ class Remote extends EventEmitter {
                 const index = this.buffer.indexOf(data, offset);
 
                 if (index !== -1) {
-                    this.socket.off("error", rej);
+                    this.off("error", rej);
                     this.off("data", awaiter);
 
                     this.pos = index + data.byteLength;
@@ -74,36 +69,20 @@ class Remote extends EventEmitter {
                 }
             }
 
-            this.socket.once("error", rej);
+            this.once("error", rej);
             this.on("data", awaiter);
 
             awaiter();
         });
     }
 
-    destroy() {
-        this.socket.destroy();
-    }
-
-    end(cb=()=>{}) {
-        this.socket.end(cb);
-    }
-
     pipeStdout() {
-        this.socket.pipe(process.stdout);
+        this.readStream.pipe(process.stdout);
     }
 
     pipeStdin() {
-        process.stdin.pipe(this.socket);
-    }
-
-    static create(host, port) {
-        const remote = new Remote();
-
-        remote.open(host, port);
-
-        return remote;
+        process.stdin.pipe(this.writeStream);
     }
 }
 
-module.exports = Remote;
+module.exports = PwnDuplex;
