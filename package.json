@@ -1,0 +1,12 @@
+{
+  "name": "node-pwn",
+  "version": "1.0.0",
+  "description": "Library of WIP functions and classes made to help with CTF challenges.",
+
+  "main": "index.js",
+  "keywords": [ "x86", "pwn", "ctf", "binex" ],
+  "homepage": "https://github.com/awt-256/pwn-js",
+  
+  "author": "awt-256",
+  "license": "MIT"
+}
